@@ -21,7 +21,7 @@ module.exports = async (program: any) => {
   )
 
   return new Promise((resolve, reject) => {
-    webpack(compilerConfig.resolve()).run((e, stats) => {
+    webpack(compilerConfig).run((e, stats) => {
       if (e) {
         return reject(e)
       }
@@ -30,12 +30,10 @@ module.exports = async (program: any) => {
         return reject(createErrorFromString(webpackErrors[0]))
       }
 
-      // Remove the temp JS bundle file built for the static-site-generator-plugin
       try {
+        // Remove the temp JS bundle file built for the static-site-generator-plugin
         fs.unlinkSync(`${directory}/public/render-page.js`)
-      } catch (e) {
-        // This function will fail on Windows with no further consequences.
-      }
+      } catch (err) { /* ignore */ }
 
       return resolve(null, stats)
     })

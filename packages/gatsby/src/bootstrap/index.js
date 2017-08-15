@@ -1,5 +1,6 @@
 /* @flow */
 const Promise = require(`bluebird`)
+const { stripIndent } = require(`common-tags`)
 const glob = require(`glob`)
 const _ = require(`lodash`)
 const slash = require(`slash`)
@@ -14,6 +15,8 @@ const { store, emitter } = require(`../redux`)
 const loadPlugins = require(`./load-plugins`)
 const { initCache } = require(`../utils/cache`)
 const report = require(`../reporter`)
+
+type ApiType = 'browser' | 'ssr';
 
 const {
   extractQueries,
@@ -145,77 +148,45 @@ module.exports = async (program: any) => {
 
   // Find plugins which implement gatsby-browser and gatsby-ssr and write
   // out api-runners for them.
-  const hasAPIFile = (env, plugin) =>
-    // TODO make this async...
-    glob.sync(`${plugin.resolve}/gatsby-${env}*`)[0]
-
-  const ssrPlugins = _.filter(
-    flattenedPlugins.map(plugin => {
-      return {
-        resolve: hasAPIFile(`ssr`, plugin),
+  function getPluginsForType(type: ApiType) {
+    return flattenedPlugins
+      .map(plugin => {return {
+        resolve: glob.sync(`${plugin.resolve}/gatsby-${type}*`)[0],
         options: plugin.pluginOptions,
-      }
-    }),
-    plugin => plugin.resolve
-  )
-  const browserPlugins = _.filter(
-    flattenedPlugins.map(plugin => {
-      return {
-        resolve: hasAPIFile(`browser`, plugin),
-        options: plugin.pluginOptions,
-      }
-    }),
-    plugin => plugin.resolve
-  )
+      }})
+      .filter(plugin => plugin.resolve)
+  }
 
-  let browserAPIRunner = ``
+  function appendPluginsToFile(type: ApiType) {
+    const filePath = `${siteDir}/api-runner-${type}.js`
+    const plugins = getPluginsForType(type)
+    let src
+    try {
+      src = fs.readFileSync(filePath, `utf-8`)
+    } catch (err) {
+      report.panic(`Failed to read ${siteDir}/api-runner-browser.js`, err)
+    }
 
-  try {
-    browserAPIRunner = fs.readFileSync(
-      `${siteDir}/api-runner-browser.js`,
+    fs.writeFileSync(
+      filePath,
+      stripIndent`
+        var preferDefault = m => (m && m.default) || m;
+        var plugins = [
+          ${plugins.map(({ options, resolve }) => `
+          {
+            plugin: preferDefault(require('${resolve}')),
+            options: ${JSON.stringify(options)},
+          }`).join(`,`)}
+        ];
+
+        ${src}
+      `,
       `utf-8`
     )
-  } catch (err) {
-    report.panic(`Failed to read ${siteDir}/api-runner-browser.js`, err)
   }
 
-  const browserPluginsRequires = browserPlugins
-    .map(
-      plugin =>
-        `{
-      plugin: require('${plugin.resolve}'),
-      options: ${JSON.stringify(plugin.options)},
-    }`
-    )
-    .join(`,`)
-
-  browserAPIRunner = `var plugins = [${browserPluginsRequires}]\n${browserAPIRunner}`
-
-  let sSRAPIRunner = ``
-
-  try {
-    sSRAPIRunner = fs.readFileSync(`${siteDir}/api-runner-ssr.js`, `utf-8`)
-  } catch (err) {
-    report.panic(`Failed to read ${siteDir}/api-runner-ssr.js`, err)
-  }
-
-  const ssrPluginsRequires = ssrPlugins
-    .map(
-      plugin =>
-        `{
-      plugin: require('${plugin.resolve}'),
-      options: ${JSON.stringify(plugin.options)},
-    }`
-    )
-    .join(`,`)
-  sSRAPIRunner = `var plugins = [${ssrPluginsRequires}]\n${sSRAPIRunner}`
-
-  fs.writeFileSync(
-    `${siteDir}/api-runner-browser.js`,
-    browserAPIRunner,
-    `utf-8`
-  )
-  fs.writeFileSync(`${siteDir}/api-runner-ssr.js`, sSRAPIRunner, `utf-8`)
+  appendPluginsToFile(`browser`)
+  appendPluginsToFile(`ssr`)
 
   activity.end()
 

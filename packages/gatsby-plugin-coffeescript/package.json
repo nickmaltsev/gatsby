@@ -7,7 +7,7 @@
     "Noah Lange <noahrlange@gmail.com>"
   ],
   "dependencies": {
-    "coffee-react-transform": "^5.0.0",
+    "coffee-loader": "^0.7.3",
     "coffeescript": "next"
   },
   "devDependencies": {

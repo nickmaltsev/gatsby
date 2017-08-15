@@ -13,4 +13,5 @@ module.exports = {
   componentDataDependencies: require(`./component-data-dependencies`),
   components: require(`./components`),
   jobs: require(`./jobs`),
+  webpack: require(`./webpack`),
 }

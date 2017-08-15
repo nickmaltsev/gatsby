@@ -7,7 +7,8 @@ import traverse from "babel-traverse"
 const babylon = require(`babylon`)
 
 const report = require(`../../reporter`)
-const { getGraphQLTag } = require(`../../utils/babel-plugin-extract-graphql`)
+const { getGraphQLTag } = require(`babel-plugin-remove-graphql-queries`)
+const { stripIndent } = require(`common-tags`)
 
 import type { DocumentNode, DefinitionNode } from "graphql"
 

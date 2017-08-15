@@ -16,6 +16,8 @@ try {
   }
 }
 
+HTML = HTML && HTML.__esModule ? HTML.default : HTML
+
 module.exports = (locals, callback) => {
   // const apiRunner = require(`${directory}/.cache/api-runner-ssr`)
   let headComponents = []

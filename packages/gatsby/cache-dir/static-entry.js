@@ -7,12 +7,12 @@ import pages from "./pages.json"
 import syncRequires from "./sync-requires"
 import testRequireError from "./test-require-error"
 
-let Html
+let HTML
 try {
-  Html = require(`../src/html`)
+  HTML = require(`../src/html`)
 } catch (err) {
   if (testRequireError(`..\/src\/html`, err)) {
-    Html = require(`./default-html`)
+    HTML = require(`./default-html`)
   } else {
     console.log(
       `\n\nThere was an error requiring "src/html.js"\n\n`,
@@ -22,6 +22,8 @@ try {
     process.exit()
   }
 }
+
+HTML = HTML && HTML.__esModule ? HTML.default : HTML
 
 const pathChunkName = path => {
   const name = path === `/` ? `index` : kebabCase(path)
@@ -121,7 +123,7 @@ module.exports = (locals, callback) => {
   })
 
   // Add the chunk-manifest as a head component.
-  const chunkManifest = require(`!raw!../public/chunk-manifest.json`)
+  const chunkManifest = require(`!raw-loader!../public/chunk-manifest.json`)
 
   headComponents.unshift(
     <script
@@ -200,7 +202,7 @@ module.exports = (locals, callback) => {
   )
 
   const html = `<!DOCTYPE html>\n ${renderToStaticMarkup(
-    <Html
+    <HTML
       {...bodyProps}
       headComponents={headComponents}
       preBodyComponents={preBodyComponents}
